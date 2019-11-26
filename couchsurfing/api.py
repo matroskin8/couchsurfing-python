@@ -322,9 +322,7 @@ class Api(object):
 
 if __name__ == "__main__":
 
-    # a = Api('matroskin8@gmail.com', '127247')
-    a = Api(uid='1264664', access_token='6df7f9944d35201cb6c2a75182cade0f')
-    # r = list(a.get_friendlist())
+
     # r = list(a.get_visits2('55.823682', '37.559692'))
     # r = a.get_hangouts_new('55.823682', '37.559692')
     # r = a.request_hangout(r['items'][0]['id'])
