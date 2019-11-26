@@ -11,7 +11,16 @@ except ImportError:
     # python2
     from urllib import urlencode
 
-CS_URL = "https://hapi.couchsurfing.com"
+HEADERS = {
+                "Accept": "application/json",
+                "X-CS-Url-Signature": None,
+                "Accept-Encoding": "gzip, deflate",
+                "Accept-Language": "en;q=1",
+                "Content-Type": "application/json; charset=utf-8",
+                "User-Agent": """Dalvik/2.1.0 (Linux; U; Android 5.0.1;"""
+                              """ Android SDK built for x86 Build/LSX66B) Couchsurfing"""
+                              """/android/20141121013910661/Couchsurfing/3.0.1/ee6a1da"""
+            }
 
 
 class AuthError(Exception):
@@ -73,27 +82,17 @@ class Api(object):
 
         else:
             assert (username and password)
-            login_payload = {"actionType":
-                                 "manual_login",
-                             "credentials":
-                                 {"authToken": password, "email": username}}
+            login_payload = {"actionType": "manual_login",
+                             "credentials": {"authToken": password,
+                                             "email": username}}
 
-            signature = self.get_url_signature(
-                "/api/v3/sessions" + json.dumps(login_payload)
-            )
+            signature = self.get_url_signature("/api/v3/sessions",
+                                               json.dumps(login_payload))
 
-            self._session.headers = {
-                "Accept": "application/json",
-                "X-CS-Url-Signature": signature,
-                "Accept-Encoding": "gzip, deflate",
-                "Accept-Language": "en;q=1",
-                "Content-Type": "application/json; charset=utf-8",
-                "User-Agent": """Dalvik/2.1.0 (Linux; U; Android 5.0.1;"""
-                              """ Android SDK built for x86 Build/LSX66B) Couchsurfing"""
-                              """/android/20141121013910661/Couchsurfing/3.0.1/ee6a1da"""
-            }
-
-            r = self._session.post(f'{self.api_url}/api/v3/sessions', data=json.dumps(login_payload))
+            HEADERS['X-CS-Url-Signature'] = signature
+            r = self._session.post(f'{self.api_url}/api/v3/sessions',
+                                   headers = HEADERS,
+                                   data=json.dumps(login_payload))
 
             if "sessionUser" not in r.json():
                 raise AuthError(r.json())
@@ -122,65 +121,6 @@ class Api(object):
             raise RequestError(r.text or r.reason)
 
         return r.json()
-
-    # def api_request_post(self, path, data=None):
-    #     assert self._access_token
-    #     data = json.dumps(data)
-    #     prepared = requests.Request('POST',
-    #                                 self.api_url + path,
-    #                                 self._session.headers,
-    #                                 data=data).prepare()
-    #
-    #     signature = self.get_url_signature(prepared.path_url + data)
-    #     prepared.headers['X-CS-Url-Signature'] = signature
-    #     prepared.headers['X-Access-Token'] = self._access_token
-    #     r = self._session.send(prepared)
-    #
-    #     if r.status_code != 200:
-    #         raise RequestError(r.reason)
-    #
-    #     return r.json()
-    #
-    # def api_get(self, path):
-    #     self.api_request(path)
-    #
-    #     r = self._session.get(self.api_url + path)
-    #
-    #     if (r.status_code != 200):
-    #         print(r.status_code, r.reason, r.text)
-    #         raise RequestError
-    #
-    #     return r.json()
-    #
-    # def api_get_new(self, url, params):
-    #     # self.api_request(url)
-    #
-    #     r = self.api_request(url, params=params)
-    #
-    #     if (r.status_code != 200):
-    #         raise RequestError(r.reason)
-    #
-    #     return r.json()
-    #
-    # def api_put(self, path, data):
-    #     self.api_request(path)
-    #
-    #     r = self._session.put(self.api_url + path, data=json.dumps(data))
-    #     if (r.status_code != 200):
-    #         print(r.status_code, r.reason, r.text)
-    #         raise RequestError
-    #
-    #     return r.json()
-
-    # def api_post(self, path, data):
-    #     self.api_request(path)
-    #
-    #     r = self._session.post(self.api_url + path, data=json.dumps(data))
-    #     if (r.status_code != 200):
-    #         print(r.status_code, r.reason, r.text)
-    #         raise RequestError
-    #
-    #     return r.json()
 
     def paginate_request(self, url, params, per_page=20, result_fn=None):
         page = 1
@@ -231,11 +171,6 @@ class Api(object):
         params = {'latLng': '{},{}'.format(lat, lon)}
 
         yield from self.paginate_request(url, params)
-
-    def get_photos(self, uid=None):
-        uid = uid or self.uid
-        path = f"/api/v3/users/{uid}/photo"
-        return self.api_request(path)
 
     def get_hosts(self, place_name, radius=10,  # todo use paginate_requests()
                   perpage=100, place_id=None, sort='best_match',
@@ -322,13 +257,11 @@ class Api(object):
 
 if __name__ == "__main__":
 
-    # a = Api('matroskin8@gmail.com', '127247')
-    a = Api(uid='1264664', access_token='6df7f9944d35201cb6c2a75182cade0f')
+    # a = Api(uid='1264664', access_token='6df7f9944d35201cb6c2a75182cade0f')
     # r = list(a.get_friendlist())
     # r = list(a.get_visits2('55.823682', '37.559692'))
     # r = a.get_hangouts_new('55.823682', '37.559692')
     # r = a.request_hangout(r['items'][0]['id'])
     # r = a.accept_hangout_request(r['items'][0]['id'])
     # r = a.get_profile('2009856905')
-    r = a.get_photos('2009856905')
     pass
